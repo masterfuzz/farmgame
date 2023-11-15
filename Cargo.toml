@@ -1,0 +1,9 @@
+[package]
+name = "farm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+comfy = { git = "https://github.com/masterfuzz/comfy.git", rev = "8cb5b8463bb720497c25e057310a07f931d6a159" }
