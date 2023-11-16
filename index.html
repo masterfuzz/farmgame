@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head> </head>
+  <style>
+    body {
+      margin: 0;
+      background: rgb(33, 37, 41);
+      overflow: hidden !important;
+    }
+
+    div {
+      overflow: hidden !important;
+    }
+
+    canvas {
+      width: 1106px !important;
+      height: 526px !important;
+    }
+  </style>
+  <body>
+    <div id="wasm-body"></div>
+    <script type="module">
+      import init from "./{{example}}.js";
+      init();
+    </script>
+  </body>
+</html>

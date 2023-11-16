@@ -29,7 +29,6 @@ enum GameItem {
 }
 
 struct FarmGame {
-
     selected_circle: Option<Vec2>,
 
     selected_seed: Option<String>,
@@ -51,19 +50,48 @@ enum GameEvent {
     PlantFromInventory(String, usize, usize),
 }
 
-
 impl GameLoop for FarmGame {
     fn new(_c: &mut comfy::EngineState) -> Self {
         let mut available_items: HashMap<String, GameItem> = HashMap::new();
-        available_items.insert("carrot seeds".to_string(), GameItem::Seed(Seed{name: "carrot seeds".to_string(), value: 10, yields: "carrots".to_string()}));
-        available_items.insert("pumpkin seeds".to_string(), GameItem::Seed(Seed{name: "pumpkin seeds".to_string(), value: 20, yields: "pumpkins".to_string()}));
-        available_items.insert("carrots".to_string(), GameItem::Crop(Crop{name: "carrots".to_string(), stage: 0, max_stage: 5, value: 50}));
-        available_items.insert("pumpkins".to_string(), GameItem::Crop(Crop{name: "pumpkins".to_string(), stage: 0, max_stage: 10, value: 100}));
+        available_items.insert(
+            "carrot seeds".to_string(),
+            GameItem::Seed(Seed {
+                name: "carrot seeds".to_string(),
+                value: 10,
+                yields: "carrots".to_string(),
+            }),
+        );
+        available_items.insert(
+            "pumpkin seeds".to_string(),
+            GameItem::Seed(Seed {
+                name: "pumpkin seeds".to_string(),
+                value: 20,
+                yields: "pumpkins".to_string(),
+            }),
+        );
+        available_items.insert(
+            "carrots".to_string(),
+            GameItem::Crop(Crop {
+                name: "carrots".to_string(),
+                stage: 0,
+                max_stage: 5,
+                value: 50,
+            }),
+        );
+        available_items.insert(
+            "pumpkins".to_string(),
+            GameItem::Crop(Crop {
+                name: "pumpkins".to_string(),
+                stage: 0,
+                max_stage: 10,
+                value: 100,
+            }),
+        );
 
         Self {
             selected_circle: None,
             selected_seed: Some("carrot seeds".to_string()),
-            plots: vec![Plot { crop: None }; 16*16],
+            plots: vec![Plot { crop: None }; 16 * 16],
             inventory: vec![("carrot seeds".to_string(), 10)],
             money: 0,
             events: vec![],
@@ -77,7 +105,7 @@ impl GameLoop for FarmGame {
         // draw a 16x16 grid of circles
         for x in -8..8 {
             for y in -8..8 {
-                if let Some(crop) = &mut self.plots[(x+8) as usize + (y+8) as usize * 16].crop {
+                if let Some(crop) = &mut self.plots[(x + 8) as usize + (y + 8) as usize * 16].crop {
                     if crop.stage < crop.max_stage {
                         // tick every 60 frames
                         crop.stage += tick;
@@ -93,8 +121,8 @@ impl GameLoop for FarmGame {
                         draw_circle(vec2(x as f32, y as f32), 0.5, YELLOW, 0);
                     }
                 } else {
-                                draw_circle(vec2(x as f32, y as f32), 0.5, WHITE, 0);
-                                                }
+                    draw_circle(vec2(x as f32, y as f32), 0.5, WHITE, 0);
+                }
             }
         }
 
@@ -102,60 +130,66 @@ impl GameLoop for FarmGame {
             match event {
                 GameEvent::AddItemToInventory(item, amount) => {
                     add_item_to_inventory(&mut self.inventory, item.clone(), amount);
-                },
+                }
                 GameEvent::RemoveItemFromInventory(item, amount) => {
                     if !remove_item_from_inventory(&mut self.inventory, item.clone(), amount) {
-                        println!("Tried to remove {} {} from inventory but there was none", amount, item);
+                        println!(
+                            "Tried to remove {} {} from inventory but there was none",
+                            amount, item
+                        );
                     }
-                },
+                }
                 GameEvent::PlantFromInventory(item, x, y) => {
                     if let Some(GameItem::Seed(seed)) = self.available_items.get(&item) {
-
                         if !remove_item_from_inventory(&mut self.inventory, item.clone(), 1) {
-                            println!("Tried to remove {} {} from inventory but there was none", 1, item);
+                            println!(
+                                "Tried to remove {} {} from inventory but there was none",
+                                1, item
+                            );
                         } else {
-                            self.plots[x + y * 16].crop = Some(get_crop(&self.available_items, &seed.yields).clone());
+                            self.plots[x + y * 16].crop =
+                                Some(get_crop(&self.available_items, &seed.yields).clone());
                         }
                     } else {
                         println!("Tried to plant {} but it was not a seed", item);
                     }
-                },
+                }
             }
         }
 
-
         if is_mouse_button_down(MouseButton::Left) {
-            let m = mouse_world() ;
+            let m = mouse_world();
             let x = m.x.round() as i32;
             let y = m.y.round() as i32;
             if x >= -8 && x < 8 && y >= -8 && y < 8 {
                 let c = vec2(x as f32, y as f32);
 
                 self.selected_circle = Some(c);
-                let plot = &mut self.plots[(x+8) as usize + (y+8) as usize * 16];
+                let plot = &mut self.plots[(x + 8) as usize + (y + 8) as usize * 16];
 
                 if let Some(crop) = &mut plot.crop {
                     if crop.stage == crop.max_stage {
-                        self.events.push(GameEvent::AddItemToInventory(crop.name.clone(), 1));
+                        self.events
+                            .push(GameEvent::AddItemToInventory(crop.name.clone(), 1));
                         plot.crop = None;
                     }
                 } else {
                     if let Some(seed_name) = &self.selected_seed {
-                        let seed = get_seed(&self.available_items, seed_name);
-                        let plot = &mut self.plots[(x+8) as usize + (y+8) as usize * 16];
-                        if remove_item_from_inventory(&mut self.inventory, seed.name.clone(), 1) {
-                            plot.crop = Some(get_crop(&self.available_items, &seed.yields).clone());
+                        if self.inventory.iter().any(|(name, _)| name == seed_name) {
+                            let seed = get_seed(&self.available_items, seed_name);
+                            self.events.push(GameEvent::PlantFromInventory(
+                                seed.name.clone(),
+                                (x + 8) as usize,
+                                (y + 8) as usize,
+                            ));
                         } else {
-                            println!("Tried to plant {} but it was not in inventory", seed.name);
                             self.selected_seed = None;
                         }
                     }
-
                 }
             } else {
                 self.selected_circle = None;
             }
-
         }
 
         if let Some(c) = self.selected_circle {
@@ -172,7 +206,8 @@ impl GameLoop for FarmGame {
                                 self.selected_seed = Some(seed.name.clone());
                             }
                             GameItem::Crop(crop) => {
-                                self.events.push(GameEvent::RemoveItemFromInventory(crop.name.clone(), 1));
+                                self.events
+                                    .push(GameEvent::RemoveItemFromInventory(crop.name.clone(), 1));
                                 self.money += crop.value;
                             }
                         }
@@ -180,29 +215,34 @@ impl GameLoop for FarmGame {
                 }
             }
             ui.label(&format!("Money: {}", self.money));
-            ui.label(&format!("Selected seed: {}", if let Some(seed) = &self.selected_seed { seed.clone() } else { "None".to_string() }));
+            ui.label(&format!(
+                "Selected seed: {}",
+                if let Some(seed) = &self.selected_seed {
+                    seed.clone()
+                } else {
+                    "None".to_string()
+                }
+            ));
         });
 
         egui::Window::new("Shop").show(egui(), |ui| {
             ui.label("Shop:");
             for item in self.available_items.values() {
                 if let GameItem::Seed(seed) = item {
-                    if ui.button(&format!("{}: {}$", seed.name, seed.value)).clicked() {
+                    if ui
+                        .button(&format!("{}: {}$", seed.name, seed.value))
+                        .clicked()
+                    {
                         if self.money >= seed.value {
                             self.money -= seed.value;
-                            self.events.push(GameEvent::AddItemToInventory(seed.name.clone(), 1));
+                            self.events
+                                .push(GameEvent::AddItemToInventory(seed.name.clone(), 1));
                         }
                     }
                 }
             }
         });
-
-        
-        
     }
-
-
-
 }
 
 fn get_seed<'a>(available_items: &'a HashMap<String, GameItem>, name: &str) -> &'a Seed {
@@ -243,4 +283,3 @@ fn remove_item_from_inventory(inventory: &mut Inventory, item: String, amount: u
     }
     return false;
 }
-
